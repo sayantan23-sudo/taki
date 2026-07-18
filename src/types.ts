@@ -91,6 +91,17 @@ export interface GalleryPhoto {
     text: string;
     timestamp: string;
   }[];
+}export interface AlumniNotice {
+  id: string;
+  title: string;
+  content: string;
+  category: 'General' | 'Event' | 'Urgent' | 'Academic' | 'Donation';
+  postedBy: {
+    name: string;
+    email: string;
+    batchYear: number;
+    avatarUrl?: string;
+  };
+  postedAt: string;
+  isPinned?: boolean;
 }
-
-

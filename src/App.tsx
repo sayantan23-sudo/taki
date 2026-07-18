@@ -16,7 +16,8 @@ import {
   Camera,
   Shield,
   Phone,
-  Info
+  Info,
+  Megaphone
 } from 'lucide-react';
 
 import { UserProfile, MembershipStatus } from './types';
@@ -30,6 +31,7 @@ import MediaGallery from './components/MediaGallery';
 import Committee from './components/Committee';
 import ContactUs from './components/ContactUs';
 import AboutUs from './components/AboutUs';
+import NoticeBoard from './components/NoticeBoard';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
@@ -111,6 +113,7 @@ export default function App() {
   // Navigation tabs config
   const navTabs = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'notices', label: 'Notice Board', icon: Megaphone },
     { id: 'about', label: 'About TBAAK', icon: Info },
     { id: 'chat', label: 'Community Chat', icon: MessageSquare, badge: stats.activeChats > 0 ? stats.activeChats : undefined },
     { id: 'gallery', label: 'Media Gallery', icon: Camera },
@@ -125,6 +128,8 @@ export default function App() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardHome user={currentUser} onNavigate={setActiveTab} stats={stats} />;
+      case 'notices':
+        return <NoticeBoard currentUser={currentUser} />;
       case 'about':
         return <AboutUs />;
       case 'chat':

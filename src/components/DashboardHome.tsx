@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
-import React, { useState } from 'react';
-import { UserProfile, MembershipStatus } from '../types';
+import React, { useState, useEffect } from 'react';
+import { UserProfile, MembershipStatus, AlumniNotice } from '../types';
 import { 
   Award, 
   Users, 
@@ -18,7 +18,9 @@ import {
   Sparkles,
   ChevronLeft,
   Star,
-  CreditCard
+  CreditCard,
+  Megaphone,
+  Pin
 } from 'lucide-react';
 import Events from './Events';
 import MembershipCard from './MembershipCard';
@@ -232,6 +234,25 @@ export default function DashboardHome({ user, onNavigate, stats }: DashboardHome
   const isExpired = user.membershipStatus === MembershipStatus.EXPIRED || user.membershipStatus === MembershipStatus.NOT_MEMBER;
   const [selectedMonthIdx, setSelectedMonthIdx] = useState(new Date().getMonth());
   const [isCardOpen, setIsCardOpen] = useState(false);
+  const [notices, setNotices] = useState<AlumniNotice[]>([]);
+  const [noticesLoading, setNoticesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNotices = async () => {
+      try {
+        const response = await fetch('/api/notices');
+        if (response.ok) {
+          const data = await response.json();
+          setNotices(data.notices || []);
+        }
+      } catch (err) {
+        console.error('Error loading notices on home:', err);
+      } finally {
+        setNoticesLoading(false);
+      }
+    };
+    fetchNotices();
+  }, []);
 
   // Key historic updates or announcements for Taki House High School Alumni
   const announcements = [
@@ -464,6 +485,92 @@ export default function DashboardHome({ user, onNavigate, stats }: DashboardHome
               </div>
             );
           })()}
+
+          {/* Real-time Notice Board Circulars */}
+          <div className="space-y-6" id="realtime-noticeboard-widget">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#0D5230]/20 pb-4">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-amber-50 border border-amber-500/20 text-amber-800 rounded">
+                  <Megaphone className="h-4.5 w-4.5 text-[#0D5230] animate-bounce" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-lg font-bold text-[#0D5230] font-serif uppercase tracking-tight">
+                    Live Notice Board & Community Circulars
+                  </h3>
+                  <p className="text-xs text-slate-500 font-sans mt-0.5">
+                    Real-time requests and official boards updated by the alumni.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigate('notices')}
+                className="self-start sm:self-auto text-xs font-bold text-[#0D5230] hover:text-[#0A4025] hover:underline flex items-center gap-1 font-sans cursor-pointer bg-green-50 border border-[#0D5230]/20 px-3 py-1.5"
+              >
+                <span>View Full Board</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {noticesLoading ? (
+              <div className="py-8 text-center bg-white border border-slate-200">
+                <span className="text-xs text-slate-400 font-mono">Updating community circulars...</span>
+              </div>
+            ) : notices.length === 0 ? (
+              <div className="p-6 bg-white border-2 border-[#0D5230]/10 text-center font-sans">
+                <p className="text-xs text-slate-400 italic">No notices posted yet. Be the first to publish a circular!</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {notices.slice(0, 2).map((notice) => {
+                  const isUrgent = notice.category === 'Urgent';
+                  return (
+                    <div 
+                      key={notice.id}
+                      onClick={() => onNavigate('notices')}
+                      className={`p-4 border-2 text-left cursor-pointer transition-all hover:scale-[1.01] ${
+                        notice.isPinned
+                          ? 'bg-amber-50/50 border-amber-400 shadow-[2px_2px_0px_0px_rgba(245,158,11,0.15)]'
+                          : isUrgent
+                          ? 'bg-red-50/40 border-red-400 shadow-[2px_2px_0px_0px_rgba(220,38,38,0.1)]'
+                          : 'bg-white border-slate-200 hover:border-[#0D5230]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`px-2 py-0.5 text-[8px] font-sans font-black uppercase tracking-wider border ${
+                          notice.isPinned
+                            ? 'bg-amber-100 text-amber-800 border-amber-300'
+                            : isUrgent
+                            ? 'bg-red-100 text-red-800 border-red-300'
+                            : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        }`}>
+                          {notice.isPinned && <Pin className="h-2 w-2 inline mr-0.5 fill-amber-800" />}
+                          {notice.category}
+                        </span>
+                        
+                        <span className="text-[9px] font-mono text-slate-400">
+                          {new Date(notice.postedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </span>
+                      </div>
+
+                      <h4 className="text-xs sm:text-sm font-bold font-serif text-slate-900 leading-tight line-clamp-1">
+                        {notice.title}
+                      </h4>
+                      
+                      <p className="text-[11px] text-slate-500 font-sans leading-relaxed mt-1 line-clamp-2">
+                        {notice.content}
+                      </p>
+
+                      <div className="mt-3 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[9px] text-slate-400 font-sans">
+                        <span className="font-bold text-slate-600 truncate max-w-[100px]">{notice.postedBy.name}</span>
+                        <span>•</span>
+                        <span>Class of {notice.postedBy.batchYear}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Announcements sub-section */}
           <div className="space-y-6">

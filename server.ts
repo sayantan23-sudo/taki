@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import { MembershipStatus, MembershipTier, UserProfile, ChatMessage, RenewalSubmission, AlumniEvent, GalleryPhoto } from "./src/types.js";
+import { MembershipStatus, MembershipTier, UserProfile, ChatMessage, RenewalSubmission, AlumniEvent, GalleryPhoto, AlumniNotice } from "./src/types.js";
 
 async function startServer() {
   const app = express();
@@ -108,6 +108,63 @@ async function startServer() {
   ];
 
   const renewals: RenewalSubmission[] = [];
+
+  const notices: AlumniNotice[] = [
+    {
+      id: "n1",
+      title: "Centenary Year (100 Years) Celebration: Organizing Committee Formed",
+      content: "As Taki House Govt. Spon. High School approaches its historic 100-year mark, the Alumni Association has officially constituted the Centenary Celebration Core Committee. We invite proposals, rare archival photographs, and suggestions from all batches worldwide. Please join our next planning assembly on August 15th.",
+      category: "General",
+      postedBy: {
+        name: "Pradip Kumar Banerjee",
+        email: "pradip.banerjee@taki.alumni",
+        batchYear: 1976,
+        avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"
+      },
+      postedAt: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
+      isPinned: true
+    },
+    {
+      id: "n2",
+      title: "URGENT: O-Negative Blood Required at Sealdah Medical College Hospital",
+      content: "Urgent O-Negative whole blood or platelets required for the medical treatment of the spouse of our beloved retired physical education instructor, Shri Tarun Kanti Ghosh. If any alumnus in the Sealdah/Kolkata area with O-Negative blood group is available to donate, please immediately contact our welfare cell at +91 98311 55667.",
+      category: "Urgent",
+      postedBy: {
+        name: "Amit Sen",
+        email: "amit.sen@taki.alumni",
+        batchYear: 1988,
+        avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+      },
+      postedAt: new Date(Date.now() - 3600000 * 5).toISOString(), // 5 hours ago
+      isPinned: true
+    },
+    {
+      id: "n3",
+      title: "TBAAK Annual Merit-cum-Means Scholarships 2026: Applications Open",
+      content: "We are pleased to announce that applications for the TBAAK Merit-cum-Means Scholarships are now officially open for current students of Classes 9 to 12. Generous contributions from our Life and Patron members have enabled us to increase the scholarship pool by 20% this year. Help us identify deserving boys in your local neighbourhoods.",
+      category: "Academic",
+      postedBy: {
+        name: "Sourav Das",
+        email: "sourav.das@taki.alumni",
+        batchYear: 2005,
+        avatarUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150"
+      },
+      postedAt: new Date(Date.now() - 3600000 * 24).toISOString() // 1 day ago
+    },
+    {
+      id: "n4",
+      title: "Early-Bird Registration counters opening for 94th Winter Reunion",
+      content: "Special registration desks for physical collector-edition reunion passes and delegate kits will open at the school lobby starting next Monday. You can also book digitally inside our portal! All life members will receive complimentary kits.",
+      category: "Event",
+      postedBy: {
+        name: "Pradip Kumar Banerjee",
+        email: "pradip.banerjee@taki.alumni",
+        batchYear: 1976,
+        avatarUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150"
+      },
+      postedAt: new Date(Date.now() - 3600000 * 48).toISOString() // 2 days ago
+    }
+  ];
 
   const events: AlumniEvent[] = [
     {
@@ -520,6 +577,46 @@ async function startServer() {
       avatarUrl: u.avatarUrl
     }));
     res.json({ directory });
+  });
+
+  // Get all notices
+  app.get("/api/notices", (req, res) => {
+    res.json({ notices });
+  });
+
+  // Post a new notice
+  app.post("/api/notices", (req, res) => {
+    const { title, content, category, postedByEmail } = req.body;
+
+    if (!title || !content || !category || !postedByEmail) {
+      res.status(400).json({ error: "Title, content, category and poster email are required." });
+      return;
+    }
+
+    const user = users.find(u => u.email.toLowerCase() === postedByEmail.toLowerCase().trim());
+    if (!user) {
+      res.status(404).json({ error: "User profile not found." });
+      return;
+    }
+
+    const newNotice: AlumniNotice = {
+      id: "n" + (notices.length + 1),
+      title: title.trim(),
+      content: content.trim(),
+      category: category as any,
+      postedBy: {
+        name: user.name,
+        email: user.email,
+        batchYear: user.batchYear,
+        avatarUrl: user.avatarUrl
+      },
+      postedAt: new Date().toISOString()
+    };
+
+    // Prepend new notice, but keep pinned notices at the very top
+    notices.unshift(newNotice);
+    
+    res.status(201).json({ success: true, notice: newNotice });
   });
 
   // Get all events
